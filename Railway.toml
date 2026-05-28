@@ -1,78 +1,53 @@
-# Learning Analytics Platform - Railway Configuration
-# API Gateway - Single entry point for frontend
+# Railway Configuration for Learning Analytics Platform
+# Single Project with Multiple Services
 
 [build]
-command = "npm install"
+buildCommand = "npm run build"
 
-[deploy]
-startCommand = "npm run start:gateway"
-
-[env]
-# Database Configuration
-DB_HOST = "${{railway.services.postgres.host}}"
-DB_PORT = "${{railway.services.postgres.port}}"
-DB_USER = "${{railway.services.postgres.user}}"
-DB_PASSWORD = "${{railway.services.postgres.password}}"
-DB_NAME = "learning_analytics"
-
-# RabbitMQ Configuration
-RABBITMQ_HOST = "${{railway.services.rabbitmq.host}}"
-RABBITMQ_PORT = "${{railway.services.rabbitmq.port}}"
-RABBITMQ_USER = "${{railway.services.rabbitmq.user}}"
-RABBITMQ_PASSWORD = "${{railway.services.rabbitmq.password}}"
-
-# JWT Configuration
-JWT_SECRET = "your-super-secret-jwt-key-change-in-production"
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_MINUTES = "60"
-
-# CORS Configuration
-CORS_ORIGINS = "https://your-frontend.vercel.app,http://localhost:3000"
-
-# Service URLs - Railway will provide these URLs for each microservice
-AUTH_SERVICE_URL = "${{railway.services.auth-service.url}}"
-EVENT_SERVICE_URL = "${{railway.services.event-service.url}}"
-TELEMETRY_SERVICE_URL = "${{railway.services.telemetry-service.url}}"
-RISK_SERVICE_URL = "${{railway.services.risk-service.url}}"
-ALERT_SERVICE_URL = "${{railway.services.alert-service.url}}"
-
-# Gateway Port
-PORT = "8080"
-
-[http]
-# Gateway service will be exposed on port 8080
+# API Gateway Service
+[[services]]
+name = "gateway"
 port = 8080
+buildCommand = "cd gateway && npm install && npm run build"
+startCommand = "cd gateway && npm start"
+healthcheck = "curl -f http://localhost:8080/health || exit 1"
 
-[env]
-# Database Configuration
-DB_HOST = "${{railway.services.postgres.host}}"
-DB_PORT = "${{railway.services.postgres.port}}"
-DB_USER = "${{railway.services.postgres.user}}"
-DB_PASSWORD = "${{railway.services.postgres.password}}"
-DB_NAME = "learning_analytics"
+# User Service
+[[services]]
+name = "auth-service"
+port = 8000
+buildCommand = "cd auth-service && npm install && npm run build"
+startCommand = "cd auth-service && npm start"
+healthcheck = "curl -f http://localhost:8000/health || exit 1"
 
-# RabbitMQ Configuration
-RABBITMQ_HOST = "${{railway.services.rabbitmq.host}}"
-RABBITMQ_PORT = "${{railway.services.rabbitmq.port}}"
-RABBITMQ_USER = "${{railway.services.rabbitmq.user}}"
-RABBITMQ_PASSWORD = "${{railway.services.rabbitmq.password}}"
+# Course Service
+[[services]]
+name = "event-service"
+port = 8002
+buildCommand = "cd event-service && npm install && npm run build"
+startCommand = "cd event-service && npm start"
+healthcheck = "curl -f http://localhost:8002/health || exit 1"
 
-# JWT Configuration
-JWT_SECRET = "your-super-secret-jwt-key-change-in-production"
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_MINUTES = "60"
+# Enrollment Service
+[[services]]
+name = "telemetry-processor-service"
+port = 8003
+buildCommand = "cd telemetry-processor-service && npm install && npm run build"
+startCommand = "cd telemetry-processor-service && npm start"
+healthcheck = "curl -f http://localhost:8003/health || exit 1"
 
-# CORS Configuration
-CORS_ORIGINS = "https://your-frontend.vercel.app,http://localhost:3000"
+# Academic Risk Service
+[[services]]
+name = "academic-risk-service"
+port = 8004
+buildCommand = "cd academic-risk-service && npm install && npm run build"
+startCommand = "cd academic-risk-service && npm start"
+healthcheck = "curl -f http://localhost:8004/health || exit 1"
 
-# Service Ports
-AUTH_PORT = "8000"
-EVENT_PORT = "8002"
-TELEMETRY_PORT = "8003"
-RISK_PORT = "8004"
-ALERT_PORT = "8005"
-GATEWAY_PORT = "8080"
-
-[http]
-# Gateway service will be exposed on port 8080
-port = 8080
+# Alert Service
+[[services]]
+name = "alert-service"
+port = 8005
+buildCommand = "cd alert-service && npm install && npm run build"
+startCommand = "cd alert-service && npm start"
+healthcheck = "curl -f http://localhost:8005/health || exit 1"

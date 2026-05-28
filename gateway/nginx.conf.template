@@ -32,25 +32,25 @@ http {
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=health:10m rate=5r/s;
 
-    # Upstreams populated at container start via envsubst
+    # Internal service discovery for Railway multi-service deployment
     upstream auth_service {
-        server ${AUTH_SERVICE_URL};
+        server auth-service:8000;
     }
 
     upstream event_service {
-        server ${EVENT_SERVICE_URL};
+        server event-service:8002;
     }
 
     upstream telemetry_service {
-        server ${TELEMETRY_SERVICE_URL};
+        server telemetry-processor-service:8003;
     }
 
     upstream risk_service {
-        server ${RISK_SERVICE_URL};
+        server academic-risk-service:8004;
     }
 
     upstream alert_service {
-        server ${ALERT_SERVICE_URL};
+        server alert-service:8005;
     }
 
     # Allow requests from localhost dev and any *.vercel.app / *.railway.app origin
