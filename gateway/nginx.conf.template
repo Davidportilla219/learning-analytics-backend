@@ -32,100 +32,92 @@ http {
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=health:10m rate=5r/s;
 
-    # Upstream services — each points to its own service and port
+    # Upstreams populated at container start via envsubst
     upstream auth_service {
-        server auth-service:8000;
+        server ${AUTH_SERVICE_URL};
     }
 
-    upstream event_capture_service {
-        server event-service:8002;
+    upstream event_service {
+        server ${EVENT_SERVICE_URL};
     }
 
-    upstream telemetry_processor_service {
-        server telemetry-processor-service:8003;
+    upstream telemetry_service {
+        server ${TELEMETRY_SERVICE_URL};
     }
 
-    upstream academic_risk_service {
-        server academic-risk-service:8004;
+    upstream risk_service {
+        server ${RISK_SERVICE_URL};
     }
 
     upstream alert_service {
-        server alert-service:8005;
+        server ${ALERT_SERVICE_URL};
     }
 
-    # CORS map — allows both localhost dev and any production origin set via env
-    # The actual per-origin check is handled by each FastAPI service.
-    # Nginx adds CORS headers for OPTIONS preflight so the browser is unblocked
-    # even when an upstream is slow to respond.
+    # Allow requests from localhost dev and any *.vercel.app / *.railway.app origin
     map $http_origin $cors_origin {
-        default "";
-        "~^https?://localhost(:[0-9]+)?$" $http_origin;
-        "~^https://.*\.vercel\.app$"      $http_origin;
-        "~^https://.*\.railway\.app$"     $http_origin;
+        default                            "";
+        "~^https?://localhost(:[0-9]+)?$"  $http_origin;
+        "~^https://.*\.vercel\.app$"       $http_origin;
+        "~^https://.*\.railway\.app$"      $http_origin;
     }
 
     server {
-        listen 80;
+        listen ${PORT};
         server_name _;
 
-        # Handle CORS preflight for every proxied route
+        # CORS preflight for all proxied routes
         location ~ ^/(auth|event-capture|telemetry-processor|academic-risk|alert)/ {
             if ($request_method = OPTIONS) {
-                add_header Access-Control-Allow-Origin  $cors_origin always;
-                add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
-                add_header Access-Control-Allow-Headers "Authorization, Content-Type, Accept" always;
+                add_header Access-Control-Allow-Origin      $cors_origin always;
+                add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
+                add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
                 add_header Access-Control-Allow-Credentials "true" always;
                 add_header Content-Length 0;
                 add_header Content-Type text/plain;
                 return 204;
             }
 
-            # Inject CORS headers on real responses too
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
 
             limit_req zone=api burst=20 nodelay;
 
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header Host              $host;
+            proxy_set_header X-Real-IP         $remote_addr;
+            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
 
-            # Route to the correct upstream
             location /auth/ {
                 proxy_pass http://auth_service/;
             }
             location /event-capture/ {
-                proxy_pass http://event_capture_service/;
+                proxy_pass http://event_service/;
             }
             location /telemetry-processor/ {
-                proxy_pass http://telemetry_processor_service/;
+                proxy_pass http://telemetry_service/;
             }
             location /academic-risk/ {
-                proxy_pass http://academic_risk_service/;
+                proxy_pass http://risk_service/;
             }
             location /alert/ {
                 proxy_pass http://alert_service/;
             }
         }
 
-        # Gateway health check (no rate limit)
         location /health {
             add_header Content-Type application/json;
             return 200 '{"status":"ok","service":"gateway"}';
         }
 
-        # Aggregate health across services
         location /health-aggregate {
             limit_req zone=health burst=10 nodelay;
-            proxy_pass http://telemetry_processor_service/health-aggregate;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_pass http://telemetry_service/health-aggregate;
+            proxy_set_header Host              $host;
+            proxy_set_header X-Real-IP         $remote_addr;
+            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Root
         location / {
             add_header Content-Type application/json;
             return 200 '{"message":"Learning Analytics Platform API Gateway","version":"1.0.0"}';
