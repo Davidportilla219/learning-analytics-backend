@@ -1,9 +1,6 @@
 # Railway Configuration for Learning Analytics Platform
 # Single Project with Multiple Services
 
-[build]
-buildCommand = "npm run build"
-
 # API Gateway Service
 [[services]]
 name = "gateway"
