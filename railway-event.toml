@@ -1,4 +1,5 @@
-# Course Service - Railway Configuration
+# Learning Analytics Platform - Railway Configuration
+# Course Service (Event Service)
 
 [build]
 command = "npm install"

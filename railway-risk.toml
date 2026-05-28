@@ -1,10 +1,11 @@
-# Course Service - Railway Configuration
+# Learning Analytics Platform - Railway Configuration
+# Academic Risk Service
 
 [build]
 command = "npm install"
 
 [deploy]
-startCommand = "npm run start:courses"
+startCommand = "npm run start:risk"
 
 [env]
 # Database Configuration
@@ -12,7 +13,7 @@ DB_HOST = "${{railway.services.postgres.host}}"
 DB_PORT = "${{railway.services.postgres.port}}"
 DB_USER = "${{railway.services.postgres.user}}"
 DB_PASSWORD = "${{railway.services.postgres.password}}"
-DB_NAME = "course_service_db"
+DB_NAME = "risk_service_db"
 
 # RabbitMQ Configuration
 RABBITMQ_HOST = "${{railway.services.rabbitmq.host}}"
@@ -28,7 +29,7 @@ JWT_EXPIRE_MINUTES = "60"
 # CORS Configuration - REMOVED: Microservices don't need CORS, gateway handles it
 
 # Service Port
-PORT = "8002"
+PORT = "8004"
 
 [http]
-port = 8002
+port = 8004

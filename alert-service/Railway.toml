@@ -25,8 +25,7 @@ JWT_SECRET = "your-super-secret-jwt-key-change-in-production"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = "60"
 
-# CORS Configuration
-CORS_ORIGINS = "https://your-frontend.vercel.app,http://localhost:3000"
+# CORS Configuration - REMOVED: Microservices don't need CORS, gateway handles it
 
 # Service Port
 PORT = "8005"
