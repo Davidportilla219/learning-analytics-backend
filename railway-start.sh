@@ -1,51 +1,66 @@
 #!/bin/bash
 
 # Learning Analytics Platform - Railway Startup Script
-# This script handles Railway-specific deployment logic
+# This script handles the dynamic URLs provided by Railway service discovery
 
-set -e
+echo "🚀 Starting Learning Analytics API Gateway..."
 
-echo "🚆 Starting Learning Analytics Platform on Railway..."
+# Wait for services to be ready
+echo "⏳ Waiting for services to be ready..."
 
-# Wait for database to be ready
-echo "⏳ Waiting for PostgreSQL to be ready..."
-until docker compose -f docker-compose.railway.yml exec -T postgres pg_isready -U postgres; do
-    echo "PostgreSQL is unavailable - sleeping"
-    sleep 2
-done
+# Function to check if a service is available
+check_service() {
+    local url=$1
+    local service_name=$2
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s --head "$url" > /dev/null 2>&1; then
+            echo "✅ $service_name is ready"
+            return 0
+        fi
+        echo "⏳ Waiting for $service_name... ($attempt/$max_attempts)"
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    echo "❌ $service_name is not ready after $max_attempts attempts"
+    return 1
+}
 
-echo "✅ PostgreSQL is ready!"
+# Check all services
+echo "🔍 Checking service availability..."
 
-# Wait for RabbitMQ to be ready
-echo "⏳ Waiting for RabbitMQ to be ready..."
-until docker compose -f docker-compose.railway.yml exec -T rabbitmq rabbitmq-diagnostics -q ping; do
-    echo "RabbitMQ is unavailable - sleeping"
-    sleep 2
-done
+# Railway provides these URLs dynamically
+AUTH_SERVICE_URL="${AUTH_SERVICE_URL:-http://localhost:8001}"
+EVENT_SERVICE_URL="${EVENT_SERVICE_URL:-http://localhost:8002}"
+TELEMETRY_SERVICE_URL="${TELEMETRY_SERVICE_URL:-http://localhost:8003}"
+RISK_SERVICE_URL="${RISK_SERVICE_URL:-http://localhost:8004}"
+ALERT_SERVICE_URL="${ALERT_SERVICE_URL:-http://localhost:8005}"
 
-echo "✅ RabbitMQ is ready!"
+echo "📡 Service URLs:"
+echo "   Auth: $AUTH_SERVICE_URL"
+echo "   Event: $EVENT_SERVICE_URL"
+echo "   Telemetry: $TELEMETRY_SERVICE_URL"
+echo "   Risk: $RISK_SERVICE_URL"
+echo "   Alert: $ALERT_SERVICE_URL"
 
-# Run database migrations if needed
-echo "🗃️ Running database migrations..."
-for service in auth-service event-service telemetry-processor-service academic-risk-service alert-service; do
-    if [ -f "${service}/migrate.sh" ]; then
-        echo "🔄 Running migrations for ${service}..."
-        docker compose -f docker-compose.railway.yml exec -T ${service} /bin/sh -c "cd /app && ./migrate.sh"
-    fi
-done
+# Check services (optional - can be disabled for faster startup)
+# check_service "$AUTH_SERVICE_URL" "Auth Service"
+# check_service "$EVENT_SERVICE_URL" "Event Service"
+# check_service "$TELEMETRY_SERVICE_URL" "Telemetry Service"
+# check_service "$RISK_SERVICE_URL" "Risk Service"
+# check_service "$ALERT_SERVICE_URL" "Alert Service"
 
-echo "🎯 Starting all services..."
-docker compose -f docker-compose.railway.yml up -d
+echo "🚀 Starting API Gateway..."
 
-echo "🔍 Verifying services..."
-sleep 10
+# Start the gateway with all environment variables
+export AUTH_SERVICE_URL="$AUTH_SERVICE_URL"
+export EVENT_SERVICE_URL="$EVENT_SERVICE_URL"
+export TELEMETRY_SERVICE_URL="$TELEMETRY_SERVICE_URL"
+export RISK_SERVICE_URL="$RISK_SERVICE_URL"
+export ALERT_SERVICE_URL="$ALERT_SERVICE_URL"
 
-# Health checks
-echo "🏥 Running health checks..."
-curl -sS http://localhost:8080/health || echo "❌ Gateway health check failed"
-curl -sS http://localhost:8080/auth/api/v1/health || echo "❌ Auth service health check failed"
-curl -sS http://localhost:8080/event-capture/api/v1/health || echo "❌ Event service health check failed"
-
-echo "🎉 Learning Analytics Platform started successfully!"
-echo "📊 Gateway URL: http://localhost:8080"
-echo "🐰 RabbitMQ Management: http://localhost:15672 (guest:guest)"
+# Start the gateway
+npm run start:gateway
