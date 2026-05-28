@@ -5,11 +5,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-COPY auth-service/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-COPY auth-service/ ./
-COPY shared/ /app/shared/
+COPY app/ ./app/
+COPY shared/ ./shared/
 
 EXPOSE 8000
 

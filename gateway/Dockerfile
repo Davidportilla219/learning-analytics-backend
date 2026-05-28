@@ -2,7 +2,7 @@ FROM nginx:alpine
 
 RUN apk add --no-cache gettext
 
-COPY gateway/nginx.conf.template /etc/nginx/nginx.conf.template
+COPY nginx.conf.template /etc/nginx/nginx.conf.template
 
 RUN mkdir -p /usr/share/nginx/html
 
