@@ -78,12 +78,17 @@ class UserCreateDTO(BaseModel):
 
 class UserResponseDTO(BaseModel):
     """DTO for user responses."""
-    
+
     id: UUID
     username: str
+    name: Optional[str] = None
     email: str
+    role: str = "student"
     is_superuser: bool
+    institution: Optional[str] = None
+    department: Optional[str] = None
     created_at: datetime
-    
+    updated_at: Optional[datetime] = None
+
     class Config:
         from_attributes = True
