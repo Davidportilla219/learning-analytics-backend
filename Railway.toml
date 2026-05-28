@@ -1,6 +1,4 @@
 # Railway Configuration for Learning Analytics Platform
-# Single Project with Multiple Services
-
 # API Gateway Service
 [[services]]
 name = "gateway"
@@ -8,43 +6,3 @@ port = 8080
 buildCommand = "cd gateway && npm install && npm run build"
 startCommand = "cd gateway && npm start"
 healthcheck = "curl -f http://localhost:8080/health || exit 1"
-
-# User Service
-[[services]]
-name = "auth-service"
-port = 8000
-buildCommand = "cd auth-service && npm install && npm run build"
-startCommand = "cd auth-service && npm start"
-healthcheck = "curl -f http://localhost:8000/health || exit 1"
-
-# Course Service
-[[services]]
-name = "event-service"
-port = 8002
-buildCommand = "cd event-service && npm install && npm run build"
-startCommand = "cd event-service && npm start"
-healthcheck = "curl -f http://localhost:8002/health || exit 1"
-
-# Enrollment Service
-[[services]]
-name = "telemetry-processor-service"
-port = 8003
-buildCommand = "cd telemetry-processor-service && npm install && npm run build"
-startCommand = "cd telemetry-processor-service && npm start"
-healthcheck = "curl -f http://localhost:8003/health || exit 1"
-
-# Academic Risk Service
-[[services]]
-name = "academic-risk-service"
-port = 8004
-buildCommand = "cd academic-risk-service && npm install && npm run build"
-startCommand = "cd academic-risk-service && npm start"
-healthcheck = "curl -f http://localhost:8004/health || exit 1"
-
-# Alert Service
-[[services]]
-name = "alert-service"
-port = 8005
-buildCommand = "cd alert-service && npm install && npm run build"
-startCommand = "cd alert-service && npm start"
-healthcheck = "curl -f http://localhost:8005/health || exit 1"
