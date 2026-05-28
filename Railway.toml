@@ -1,0 +1,41 @@
+# Learning Analytics Platform - Railway Configuration
+
+[build]
+command = "docker compose build"
+
+[deploy]
+startCommand = "./railway-start.sh"
+
+[env]
+# Database Configuration
+DB_HOST = "${{railway.services.postgres.host}}"
+DB_PORT = "${{railway.services.postgres.port}}"
+DB_USER = "${{railway.services.postgres.user}}"
+DB_PASSWORD = "${{railway.services.postgres.password}}"
+DB_NAME = "learning_analytics"
+
+# RabbitMQ Configuration
+RABBITMQ_HOST = "${{railway.services.rabbitmq.host}}"
+RABBITMQ_PORT = "${{railway.services.rabbitmq.port}}"
+RABBITMQ_USER = "${{railway.services.rabbitmq.user}}"
+RABBITMQ_PASSWORD = "${{railway.services.rabbitmq.password}}"
+
+# JWT Configuration
+JWT_SECRET = "your-super-secret-jwt-key-change-in-production"
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRE_MINUTES = "60"
+
+# CORS Configuration
+CORS_ORIGINS = "https://your-frontend.vercel.app,http://localhost:3000"
+
+# Service Ports
+AUTH_PORT = "8000"
+EVENT_PORT = "8002"
+TELEMETRY_PORT = "8003"
+RISK_PORT = "8004"
+ALERT_PORT = "8005"
+GATEWAY_PORT = "8080"
+
+[http]
+# Gateway service will be exposed on port 8080
+port = 8080
