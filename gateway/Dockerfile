@@ -12,4 +12,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget -qO- http://127.0.0.1:${PORT:-80}/health > /dev/null || exit 1
 
 # Substitute PORT at runtime then start nginx
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "envsubst '${PORT}${AUTH_SERVICE_URL}${EVENT_SERVICE_URL}${TELEMETRY_SERVICE_URL}${RISK_SERVICE_URL}${ALERT_SERVICE_URL}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"]

@@ -29,13 +29,11 @@ http {
         application/javascript
         application/xml+rss;
 
-    # Use Railway's internal DNS resolver for runtime hostname resolution
-    resolver 100.100.100.100 valid=10s ipv6=off;
+    resolver 8.8.8.8 valid=30s ipv6=off;
 
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=health:10m rate=5r/s;
 
-    # Allow requests from localhost dev and any *.vercel.app / *.railway.app origin
     map $http_origin $cors_origin {
         default                            "";
         "~^https?://localhost(:[0-9]+)?$"  $http_origin;
@@ -47,17 +45,18 @@ http {
         listen ${PORT};
         server_name _;
 
-        # Service addresses as variables — forces runtime DNS resolution
-        set $auth_upstream      "auth-service.railway.internal:8000";
-        set $event_upstream     "event-service.railway.internal:8002";
-        set $telemetry_upstream "telemetry-processor-service.railway.internal:8003";
-        set $risk_upstream      "academic-risk-service.railway.internal:8004";
-        set $alert_upstream     "alert-service.railway.internal:8005";
+        # Service URLs injected at container startup via envsubst
+        set $auth_upstream      "${AUTH_SERVICE_URL}";
+        set $event_upstream     "${EVENT_SERVICE_URL}";
+        set $telemetry_upstream "${TELEMETRY_SERVICE_URL}";
+        set $risk_upstream      "${RISK_SERVICE_URL}";
+        set $alert_upstream     "${ALERT_SERVICE_URL}";
 
-        proxy_set_header Host              $host;
+        proxy_set_header Host              $proxy_host;
         proxy_set_header X-Real-IP         $remote_addr;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
 
         location /auth/ {
             if ($request_method = OPTIONS) {
@@ -71,7 +70,7 @@ http {
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://$auth_upstream/;
+            proxy_pass $auth_upstream/;
         }
 
         location /event-capture/ {
@@ -86,7 +85,7 @@ http {
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://$event_upstream/;
+            proxy_pass $event_upstream/;
         }
 
         location /telemetry-processor/ {
@@ -101,7 +100,7 @@ http {
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://$telemetry_upstream/;
+            proxy_pass $telemetry_upstream/;
         }
 
         location /academic-risk/ {
@@ -116,7 +115,7 @@ http {
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://$risk_upstream/;
+            proxy_pass $risk_upstream/;
         }
 
         location /alert/ {
@@ -131,7 +130,7 @@ http {
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
             limit_req zone=api burst=20 nodelay;
-            proxy_pass http://$alert_upstream/;
+            proxy_pass $alert_upstream/;
         }
 
         location /health {
@@ -141,7 +140,7 @@ http {
 
         location /health-aggregate {
             limit_req zone=health burst=10 nodelay;
-            proxy_pass http://$telemetry_upstream/health-aggregate;
+            proxy_pass $telemetry_upstream/health-aggregate;
         }
 
         location / {
