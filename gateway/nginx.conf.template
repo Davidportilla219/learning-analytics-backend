@@ -29,31 +29,11 @@ http {
         application/javascript
         application/xml+rss;
 
-    resolver 8.8.8.8 valid=30s ipv6=off;
+    # Use Railway's internal DNS resolver for runtime hostname resolution
+    resolver 100.100.100.100 valid=10s ipv6=off;
 
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=health:10m rate=5r/s;
-
-    # Internal service discovery for Railway multi-service deployment
-    upstream auth_service {
-        server auth-service.railway.internal:8000;
-    }
-
-    upstream event_service {
-        server event-service.railway.internal:8002;
-    }
-
-    upstream telemetry_service {
-        server telemetry-processor-service.railway.internal:8003;
-    }
-
-    upstream risk_service {
-        server academic-risk-service.railway.internal:8004;
-    }
-
-    upstream alert_service {
-        server alert-service.railway.internal:8005;
-    }
 
     # Allow requests from localhost dev and any *.vercel.app / *.railway.app origin
     map $http_origin $cors_origin {
@@ -67,43 +47,91 @@ http {
         listen ${PORT};
         server_name _;
 
-        # CORS preflight for all proxied routes
-        location ~ ^/(auth|event-capture|telemetry-processor|academic-risk|alert)/ {
+        # Service addresses as variables — forces runtime DNS resolution
+        set $auth_upstream      "auth-service.railway.internal:8000";
+        set $event_upstream     "event-service.railway.internal:8002";
+        set $telemetry_upstream "telemetry-processor-service.railway.internal:8003";
+        set $risk_upstream      "academic-risk-service.railway.internal:8004";
+        set $alert_upstream     "alert-service.railway.internal:8005";
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        location /auth/ {
             if ($request_method = OPTIONS) {
                 add_header Access-Control-Allow-Origin      $cors_origin always;
                 add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
                 add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
                 add_header Access-Control-Allow-Credentials "true" always;
                 add_header Content-Length 0;
-                add_header Content-Type text/plain;
                 return 204;
             }
-
             add_header Access-Control-Allow-Origin      $cors_origin always;
             add_header Access-Control-Allow-Credentials "true" always;
-
             limit_req zone=api burst=20 nodelay;
+            proxy_pass http://$auth_upstream/;
+        }
 
-            proxy_set_header Host              $host;
-            proxy_set_header X-Real-IP         $remote_addr;
-            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+        location /event-capture/ {
+            if ($request_method = OPTIONS) {
+                add_header Access-Control-Allow-Origin      $cors_origin always;
+                add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
+                add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
+                add_header Access-Control-Allow-Credentials "true" always;
+                add_header Content-Length 0;
+                return 204;
+            }
+            add_header Access-Control-Allow-Origin      $cors_origin always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://$event_upstream/;
+        }
 
-            location /auth/ {
-                proxy_pass http://auth_service/;
+        location /telemetry-processor/ {
+            if ($request_method = OPTIONS) {
+                add_header Access-Control-Allow-Origin      $cors_origin always;
+                add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
+                add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
+                add_header Access-Control-Allow-Credentials "true" always;
+                add_header Content-Length 0;
+                return 204;
             }
-            location /event-capture/ {
-                proxy_pass http://event_service/;
+            add_header Access-Control-Allow-Origin      $cors_origin always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://$telemetry_upstream/;
+        }
+
+        location /academic-risk/ {
+            if ($request_method = OPTIONS) {
+                add_header Access-Control-Allow-Origin      $cors_origin always;
+                add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
+                add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
+                add_header Access-Control-Allow-Credentials "true" always;
+                add_header Content-Length 0;
+                return 204;
             }
-            location /telemetry-processor/ {
-                proxy_pass http://telemetry_service/;
+            add_header Access-Control-Allow-Origin      $cors_origin always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://$risk_upstream/;
+        }
+
+        location /alert/ {
+            if ($request_method = OPTIONS) {
+                add_header Access-Control-Allow-Origin      $cors_origin always;
+                add_header Access-Control-Allow-Methods     "GET, POST, PUT, DELETE, OPTIONS" always;
+                add_header Access-Control-Allow-Headers     "Authorization, Content-Type, Accept" always;
+                add_header Access-Control-Allow-Credentials "true" always;
+                add_header Content-Length 0;
+                return 204;
             }
-            location /academic-risk/ {
-                proxy_pass http://risk_service/;
-            }
-            location /alert/ {
-                proxy_pass http://alert_service/;
-            }
+            add_header Access-Control-Allow-Origin      $cors_origin always;
+            add_header Access-Control-Allow-Credentials "true" always;
+            limit_req zone=api burst=20 nodelay;
+            proxy_pass http://$alert_upstream/;
         }
 
         location /health {
@@ -113,11 +141,7 @@ http {
 
         location /health-aggregate {
             limit_req zone=health burst=10 nodelay;
-            proxy_pass http://telemetry_service/health-aggregate;
-            proxy_set_header Host              $host;
-            proxy_set_header X-Real-IP         $remote_addr;
-            proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_pass http://$telemetry_upstream/health-aggregate;
         }
 
         location / {
