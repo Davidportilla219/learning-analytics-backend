@@ -18,8 +18,12 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), default="student")
+    institution = Column(String(200), nullable=True)
+    department = Column(String(200), nullable=True)
     is_superuser = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -42,9 +46,14 @@ class User(Base):
         return UserResponseDTO(
             id=self.id,
             username=self.username,
+            name=self.name or self.username,
             email=self.email,
+            role="admin" if self.is_superuser else (self.role or "student"),
             is_superuser=self.is_superuser,
-            created_at=self.created_at
+            institution=self.institution,
+            department=self.department,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
         )
     
     @classmethod
