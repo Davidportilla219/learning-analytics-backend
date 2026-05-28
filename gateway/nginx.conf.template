@@ -29,28 +29,30 @@ http {
         application/javascript
         application/xml+rss;
 
+    resolver 8.8.8.8 valid=30s ipv6=off;
+
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=health:10m rate=5r/s;
 
     # Internal service discovery for Railway multi-service deployment
     upstream auth_service {
-        server auth-service:8000;
+        server auth-service.railway.internal:8000;
     }
 
     upstream event_service {
-        server event-service:8002;
+        server event-service.railway.internal:8002;
     }
 
     upstream telemetry_service {
-        server telemetry-processor-service:8003;
+        server telemetry-processor-service.railway.internal:8003;
     }
 
     upstream risk_service {
-        server academic-risk-service:8004;
+        server academic-risk-service.railway.internal:8004;
     }
 
     upstream alert_service {
-        server alert-service:8005;
+        server alert-service.railway.internal:8005;
     }
 
     # Allow requests from localhost dev and any *.vercel.app / *.railway.app origin

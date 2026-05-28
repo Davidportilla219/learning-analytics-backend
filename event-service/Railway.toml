@@ -1,34 +1,9 @@
-# Course Service - Railway Configuration
-
 [build]
-command = "npm install"
+dockerfilePath = "event-service/Dockerfile"
+buildContext = "."
 
 [deploy]
-startCommand = "npm run start:courses"
-
-[env]
-# Database Configuration
-DB_HOST = "${{railway.services.postgres.host}}"
-DB_PORT = "${{railway.services.postgres.port}}"
-DB_USER = "${{railway.services.postgres.user}}"
-DB_PASSWORD = "${{railway.services.postgres.password}}"
-DB_NAME = "course_service_db"
-
-# RabbitMQ Configuration
-RABBITMQ_HOST = "${{railway.services.rabbitmq.host}}"
-RABBITMQ_PORT = "${{railway.services.rabbitmq.port}}"
-RABBITMQ_USER = "${{railway.services.rabbitmq.user}}"
-RABBITMQ_PASSWORD = "${{railway.services.rabbitmq.password}}"
-
-# JWT Configuration
-JWT_SECRET = "your-super-secret-jwt-key-change-in-production"
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRE_MINUTES = "60"
-
-# CORS Configuration - REMOVED: Microservices don't need CORS, gateway handles it
-
-# Service Port
-PORT = "8002"
-
-[http]
-port = 8002
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
